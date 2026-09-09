@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CronRun } from "../lib/cron";
+  import { getRunsInRange, type CronRun } from "../lib/cron";
 
   const MONTH_NAMES = [
     "Januari",
@@ -19,12 +19,12 @@
   const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
   interface Props {
-    runs: CronRun[];
+    expression: string;
     onSelectDay?: (key: string, runs: CronRun[]) => void;
     selectedKey?: string | null;
   }
 
-  let { runs, onSelectDay, selectedKey = null }: Props = $props();
+  let { expression, onSelectDay, selectedKey = null }: Props = $props();
 
   function buildRunsByDay(runs: CronRun[]): Map<string, CronRun[]> {
     const map = new Map<string, CronRun[]>();
@@ -39,8 +39,6 @@
   const today = new Date();
   let viewYear = $state(today.getFullYear());
   let viewMonth = $state(today.getMonth());
-
-  const runsByDay = $derived(buildRunsByDay(runs));
 
   const cells = $derived.by(() => {
     const firstOfMonth = new Date(viewYear, viewMonth, 1);
@@ -58,6 +56,14 @@
       result.push({ date, inMonth: date.getMonth() === viewMonth, key });
     }
     return result;
+  });
+
+  const runsByDay = $derived.by(() => {
+    const first = cells[0].date;
+    const last = cells[cells.length - 1].date;
+    const start = new Date(first.getFullYear(), first.getMonth(), first.getDate(), 0, 0, 0, 0);
+    const end = new Date(last.getFullYear(), last.getMonth(), last.getDate(), 23, 59, 59, 999);
+    return buildRunsByDay(getRunsInRange(expression, start, end));
   });
 
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(

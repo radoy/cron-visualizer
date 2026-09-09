@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CRON_PRESETS, parseCron, type CronRun } from "./lib/cron";
+  import { CRON_PRESETS, describeCron, getNextRuns, type CronRun } from "./lib/cron";
   import Calendar from "./components/Calendar.svelte";
   import NextRuns from "./components/NextRuns.svelte";
 
@@ -19,7 +19,8 @@
   let expression = $state("0 9 * * 1-5");
   let selectedDay = $state<{ key: string; runs: CronRun[] } | null>(null);
 
-  const result = $derived(parseCron(expression, 400));
+  const result = $derived(describeCron(expression));
+  const nextRuns = $derived(result.ok ? getNextRuns(expression, 10) : []);
 
   function handleSelectDay(key: string, runs: CronRun[]) {
     selectedDay = selectedDay?.key === key ? null : { key, runs };
@@ -99,8 +100,8 @@
 
     {#if result.ok}
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1.3fr_1fr]">
-        <Calendar runs={result.runs} onSelectDay={handleSelectDay} selectedKey={selectedDay?.key} />
-        <NextRuns runs={result.runs} limit={10} />
+        <Calendar {expression} onSelectDay={handleSelectDay} selectedKey={selectedDay?.key} />
+        <NextRuns runs={nextRuns} limit={10} />
       </div>
 
       {#if selectedDay}
